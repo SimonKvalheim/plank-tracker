@@ -1,11 +1,13 @@
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
 import { Navigation } from '@/components/Navigation'
 import Link from 'next/link'
 import { formatDuration } from '@/lib/utils/time'
 
 async function getDashboardData(userId: string) {
+  const startOf2026 = new Date('2026-01-01T00:00:00.000Z')
+  const endOf2026 = new Date('2027-01-01T00:00:00.000Z')
+
   // Get user's personal best
   const personalBest = await prisma.attempt.findFirst({
     where: { userId, isPersonalBest: true },
@@ -29,14 +31,28 @@ async function getDashboardData(userId: string) {
     take: 3,
   })
 
-  return { personalBest, rank: rank || null, totalUsers, recentAttempts }
+  // Get total plank time for 2026
+  const totalTime2026Result = await prisma.attempt.aggregate({
+    where: {
+      userId,
+      attemptedAt: {
+        gte: startOf2026,
+        lt: endOf2026,
+      },
+    },
+    _sum: { durationSeconds: true },
+  })
+
+  const totalTime2026 = totalTime2026Result._sum.durationSeconds || 0
+
+  return { personalBest, rank: rank || null, totalUsers, recentAttempts, totalTime2026 }
 }
 
 export default async function DashboardPage() {
-  const session = await getServerSession(authOptions)
+  const session = await auth()
   if (!session?.user?.id) return null
 
-  const { personalBest, rank, totalUsers, recentAttempts } = await getDashboardData(
+  const { personalBest, rank, totalUsers, recentAttempts, totalTime2026 } = await getDashboardData(
     session.user.id
   )
 
@@ -50,7 +66,17 @@ export default async function DashboardPage() {
         </h1>
 
         {/* Stats cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <div className="bg-white rounded-lg shadow p-6">
+            <h2 className="text-sm font-medium text-gray-500 uppercase tracking-wide">
+              Total Time 2026
+            </h2>
+            <p className="mt-2 text-4xl font-bold text-gray-900">
+              {totalTime2026 > 0 ? formatDuration(totalTime2026) : '--:--'}
+            </p>
+            <p className="mt-1 text-sm text-gray-500">Cumulative plank time this year</p>
+          </div>
+
           <div className="bg-white rounded-lg shadow p-6">
             <h2 className="text-sm font-medium text-gray-500 uppercase tracking-wide">
               Your Personal Best

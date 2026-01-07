@@ -19,6 +19,7 @@ export default function HistoryPage() {
 
   // Manual entry form
   const [manualTime, setManualTime] = useState('')
+  const [manualDate, setManualDate] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
 
@@ -60,7 +61,10 @@ export default function HistoryPage() {
       const response = await fetch('/api/attempts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ durationSeconds: seconds }),
+        body: JSON.stringify({
+          durationSeconds: seconds,
+          attemptedAt: manualDate || undefined,
+        }),
       })
 
       const data = await response.json()
@@ -75,6 +79,7 @@ export default function HistoryPage() {
         text: data.isPersonalBest ? 'New personal best!' : 'Attempt saved!',
       })
       setManualTime('')
+      setManualDate('')
       fetchAttempts()
       router.refresh()
     } catch {
@@ -94,23 +99,44 @@ export default function HistoryPage() {
         {/* Manual entry form */}
         <div className="bg-white rounded-lg shadow p-6 mb-8">
           <h2 className="text-lg font-medium text-gray-900 mb-4">Log Manual Entry</h2>
-          <form onSubmit={handleManualSubmit} className="flex flex-col sm:flex-row gap-4">
-            <div className="flex-1">
-              <input
-                type="text"
-                value={manualTime}
-                onChange={(e) => setManualTime(e.target.value)}
-                placeholder="Enter time (e.g., 1:30 or 90)"
-                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-              <p className="mt-1 text-xs text-gray-500">
-                Format: mm:ss (e.g., 1:30) or seconds (e.g., 90)
-              </p>
+          <form onSubmit={handleManualSubmit} className="flex flex-col gap-4">
+            <div className="flex flex-col sm:flex-row gap-4">
+              <div className="flex-1">
+                <label htmlFor="duration" className="block text-sm font-medium text-gray-700 mb-1">
+                  Duration
+                </label>
+                <input
+                  id="duration"
+                  type="text"
+                  value={manualTime}
+                  onChange={(e) => setManualTime(e.target.value)}
+                  placeholder="e.g., 1:30 or 90"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                <p className="mt-1 text-xs text-gray-500">
+                  Format: mm:ss or seconds
+                </p>
+              </div>
+              <div className="sm:w-48">
+                <label htmlFor="date" className="block text-sm font-medium text-gray-700 mb-1">
+                  Date (optional)
+                </label>
+                <input
+                  id="date"
+                  type="datetime-local"
+                  value={manualDate}
+                  onChange={(e) => setManualDate(e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                <p className="mt-1 text-xs text-gray-500">
+                  Defaults to now
+                </p>
+              </div>
             </div>
             <button
               type="submit"
               disabled={submitting || !manualTime}
-              className="px-6 py-2 bg-blue-600 text-white rounded-md font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="sm:w-fit px-6 py-2 bg-blue-600 text-white rounded-md font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {submitting ? 'Saving...' : 'Log Attempt'}
             </button>

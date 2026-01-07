@@ -1,39 +1,24 @@
-import { withAuth } from 'next-auth/middleware'
-import { NextResponse } from 'next/server'
+import NextAuth from 'next-auth'
+import authConfig from '../auth.config'
 
-export default withAuth(
-  function middleware(req) {
-    const { pathname } = req.nextUrl
-    const token = req.nextauth.token
+const { auth } = NextAuth(authConfig)
 
-    // Redirect authenticated users away from auth pages
-    if (token && (pathname === '/login' || pathname === '/register')) {
-      return NextResponse.redirect(new URL('/', req.url))
-    }
+export default auth((req) => {
+  const { pathname } = req.nextUrl
+  const isLoggedIn = !!req.auth
 
-    return NextResponse.next()
-  },
-  {
-    callbacks: {
-      authorized: ({ token, req }) => {
-        const { pathname } = req.nextUrl
+  // Public routes
+  const publicRoutes = ['/login', '/register', '/privacy']
+  const isPublicRoute = publicRoutes.includes(pathname) || pathname.startsWith('/api/auth')
 
-        // Allow public routes
-        if (
-          pathname === '/login' ||
-          pathname === '/register' ||
-          pathname === '/privacy' ||
-          pathname.startsWith('/api/auth')
-        ) {
-          return true
-        }
-
-        // Require auth for all other routes
-        return !!token
-      },
-    },
+  if (!isLoggedIn && !isPublicRoute) {
+    return Response.redirect(new URL('/login', req.url))
   }
-)
+
+  if (isLoggedIn && (pathname === '/login' || pathname === '/register')) {
+    return Response.redirect(new URL('/', req.url))
+  }
+})
 
 export const config = {
   matcher: ['/((?!_next/static|_next/image|favicon.ico).*)'],

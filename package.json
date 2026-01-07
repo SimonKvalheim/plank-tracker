@@ -8,14 +8,20 @@
     "start": "prisma migrate deploy && next start",
     "lint": "eslint",
     "postinstall": "prisma generate",
-    "db:migrate": "prisma migrate deploy"
+    "db:migrate": "prisma migrate deploy",
+    "docker:up": "docker compose up -d",
+    "docker:down": "docker compose down",
+    "docker:reset": "docker compose down -v && docker compose up -d",
+    "db:push": "prisma db push",
+    "db:studio": "prisma studio",
+    "dev:local": "npm run docker:up && sleep 2 && npm run db:push && npm run dev"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.2.0",
     "@prisma/client": "^7.2.0",
     "bcrypt": "^6.0.0",
     "next": "16.1.1",
-    "next-auth": "^4.24.13",
+    "next-auth": "^5.0.0-beta.30",
     "pg": "^8.16.3",
     "react": "19.2.3",
     "react-dom": "19.2.3"

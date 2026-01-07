@@ -1,0 +1,20 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: plank-tracker-db
+    environment:
+      POSTGRES_USER: plank_user
+      POSTGRES_PASSWORD: plank_dev_password
+      POSTGRES_DB: plank_tracker_dev
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U plank_user -d plank_tracker_dev"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:

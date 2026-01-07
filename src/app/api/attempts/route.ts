@@ -1,10 +1,9 @@
 import { NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
 
 export async function GET() {
-  const session = await getServerSession(authOptions)
+  const session = await auth()
 
   if (!session?.user?.id) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -19,7 +18,7 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  const session = await getServerSession(authOptions)
+  const session = await auth()
 
   if (!session?.user?.id) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -27,7 +26,7 @@ export async function POST(request: Request) {
 
   try {
     const body = await request.json()
-    const { durationSeconds } = body
+    const { durationSeconds, attemptedAt } = body
 
     // Validate duration
     if (!durationSeconds || typeof durationSeconds !== 'number') {
@@ -60,11 +59,25 @@ export async function POST(request: Request) {
       })
     }
 
+    // Parse optional date (default to now)
+    let attemptDate = new Date()
+    if (attemptedAt) {
+      const parsed = new Date(attemptedAt)
+      if (isNaN(parsed.getTime())) {
+        return NextResponse.json(
+          { error: 'Invalid date format' },
+          { status: 400 }
+        )
+      }
+      attemptDate = parsed
+    }
+
     // Create the new attempt
     const attempt = await prisma.attempt.create({
       data: {
         userId: session.user.id,
         durationSeconds: Math.round(durationSeconds),
+        attemptedAt: attemptDate,
         isPersonalBest,
       },
     })

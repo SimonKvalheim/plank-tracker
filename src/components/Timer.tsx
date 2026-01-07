@@ -91,6 +91,23 @@ export function Timer() {
     }
   }, [])
 
+  // Keyboard controls - space to start/stop
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.code === 'Space' && !e.repeat) {
+        e.preventDefault()
+        if (state === 'idle') {
+          start()
+        } else if (state === 'running') {
+          stop()
+        }
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [state, start, stop])
+
   return (
     <div className="flex flex-col items-center">
       {/* Timer display */}
@@ -150,6 +167,13 @@ export function Timer() {
           </>
         )}
       </div>
+
+      {/* Keyboard hint */}
+      {(state === 'idle' || state === 'running') && (
+        <p className="mt-6 text-sm text-gray-500">
+          Press <kbd className="px-2 py-1 bg-gray-100 border border-gray-300 rounded text-xs font-mono">Space</kbd> to {state === 'idle' ? 'start' : 'stop'}
+        </p>
+      )}
     </div>
   )
 }
